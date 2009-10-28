@@ -1,0 +1,49 @@
+#!/usr/bin/perl -w
+use Kit::Script;
+use Data::Dumper;
+
+my %config = auto_configure(options => ['x']);
+my $string = "SUCKA!!\n";
+print $string;
+print Dumper \%config;
+
+TRACE "trace";
+DEBUG "debug";
+INFO "info";
+WARN "warn";
+ERROR "error";
+FATAL "fatal";
+
+__END__
+
+=head1 NAME
+
+SCRIPT.pl - What the script does
+
+=head1 SYNOPSIS
+
+  test.pl [--help][-C][-v]
+
+=head1 OPTIONS
+
+=over
+
+=item C<-C> C<--configfile>
+
+The path to a configuration file to load. If this option is not given, or if
+the file specified does not exist, it will search for a configuration file.
+
+=item C<--help>
+
+Prints helpful usage info.
+
+=item C<-v> C<--verbose>
+
+Increase the verbosity of script logging.
+
+=head1 DESCRIPTION
+
+
+=head1 COPYRIGHT
+
+Copyright (C) 2007 Cox Radio Interactive. All rights reserved.
