@@ -1,4 +1,5 @@
 use inc::Module::Install;
+include 'Module::AutoInstall';
 
 name     'Perl-Tools';
 all_from 'lib/Kit/Script.pm';
@@ -7,7 +8,7 @@ license  'mit';
 
 requires 'Getopt::Long';
 requires 'Log::Log4perl';
-requires 'POD::Usage';
+requires 'Pod::Usage';
 requires 'Config::Find';
 requires 'Config::General';
 
