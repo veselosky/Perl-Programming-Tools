@@ -1,0 +1,98 @@
+#!/usr/bin/perl
+use Kit::Script;
+use Path::Class;
+use XML::Feed;
+use Net::Delicious;
+use DateTime;
+use DateTime::Format::HTTP;
+use Data::Dumper;
+
+my %config = auto_configure(options => [qw(start|s:s end|e:s dir|d:s user|u:s password|p:s)]);
+my $directory = dir($config{dir}||'.');
+my $start = eval {DateTime::Format::HTTP->parse_datetime($config{start}) } || DateTime->from_epoch(epoch=>0);
+my $end = eval {DateTime::Format::HTTP->parse_datetime($config{end}) } || DateTime->now;
+
+my $net = Net::Delicious->new({user => $config{user}, pswd => $config{password}});
+
+# Load list of existing archive files
+my @files = $directory->children;
+
+# TODO Check time of last update against existing archives to see if we need to continue
+
+# Fetch list of dates with posts
+my @dates = $net->posts_per_date();
+DEBUG(Dumper(\@dates));
+
+# Ignore dates not between $start and $end
+my @fetchem = grep { $start->ymd lt $_ and $end->ymd ge $_ } map { $_->date } @dates;
+# say "@fetchem";
+
+# TODO Group dates by month
+my %date_by_month;
+for my $date (@fetchem) {
+    push @{$date_by_month{substr($date,0,7)}}, $date;
+}
+# TODO Ignore months for which an archive file already exists
+
+# for each month: for each day with posts: Fetch posts; write month archive
+# Note: it's not very bloggish, but I have decided to sort these chronologically
+# in the archive. I think it reads better that way. -VV
+MONTH:
+for my $month (sort keys %date_by_month) {
+    my $file = $directory->file("$month.atom");
+    next MONTH if -e $file;
+    my $outfile = $file->openw 
+        or die "Error opening $file: $!";
+    
+    my $feed = XML::Feed->new('Atom');
+    $feed->title("Link Archive for $month");
+    $feed->modified(DateTime->now);
+    # FIXME Make sure this link is adjusted to work on the site.
+    $feed->self_link("http://webquills.net/feed/links/$month.atom");
+    $feed->id($feed->self_link);
+    $feed->author('Vince Veselosky');
+
+    for my $date (sort @{$date_by_month{$month}}) {
+        for my $post ($net->posts({dt => $date})) {
+            my $entry = XML::Feed::Entry->new('Atom');
+            $entry->title($post->description);
+            $entry->summary($post->extended);
+            $entry->link($post->href);
+            $entry->category(split /\s+/, $post->tags);
+            $entry->issued( DateTime::Format::HTTP->parse_datetime($post->time) );
+            $entry->modified( DateTime::Format::HTTP->parse_datetime($post->time) );
+            $entry->id("tag:webquills.net,$date:".$post->href);
+            $feed->add_entry($entry)
+        }
+    }
+    $outfile->print( $feed->as_xml );
+    $outfile->close;
+}
+
+=pod
+
+    $dest = file($dest);
+
+    $maxage = $mission->{maxage} || 86400; # by default, only check once per day
+
+    if ($dest->stat and $dest->stat->mtime > time()-$maxage) {
+        INFO("File $dest is fresh");
+        next LABEL;
+    }
+    unless ($dest->dir->stat) {
+        $dest->dir->mkpath or do {
+            ERROR("Unable to create dest dir ".$dest->dir."; $!");
+            next LABEL;
+        };
+    }
+    $headers{':content_file'} = "$dest.part";
+    # TODO Add If-Modified-Since header
+    $resp = $ua->get($source, %headers);
+    if ($resp->is_success) {
+        rename "$dest.part", $dest;
+        DEBUG("Saved $dest");
+    } else {
+        ERROR($resp->status_line);
+    }
+=cut
+
