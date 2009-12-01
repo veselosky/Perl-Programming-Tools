@@ -7,12 +7,16 @@ use DateTime;
 use DateTime::Format::HTTP;
 use Data::Dumper;
 
+my $now = DateTime->now;
 my %config = auto_configure(options => [qw(start|s:s end|e:s dir|d:s user|u:s password|p:s)]);
 my $directory = dir($config{dir}||'.');
 my $start = eval {DateTime::Format::HTTP->parse_datetime($config{start}) } || DateTime->from_epoch(epoch=>0);
-my $end = eval {DateTime::Format::HTTP->parse_datetime($config{end}) } || DateTime->now;
+my $end = eval {DateTime::Format::HTTP->parse_datetime($config{end}) } || $now;
 
-my $net = Net::Delicious->new({user => $config{user}, pswd => $config{password}});
+my $net_del_args = {user => $config{user}, pswd => $config{password}, updates => $config{dir}};
+$net_del_args->{debug} = 1 if $config{verbose}>1;
+
+my $net = Net::Delicious->new($net_del_args);
 
 # Load list of existing archive files
 my @files = $directory->children;
@@ -27,20 +31,21 @@ DEBUG(Dumper(\@dates));
 my @fetchem = grep { $start->ymd lt $_ and $end->ymd ge $_ } map { $_->date } @dates;
 # say "@fetchem";
 
-# TODO Group dates by month
+# Group dates by month
 my %date_by_month;
 for my $date (@fetchem) {
     push @{$date_by_month{substr($date,0,7)}}, $date;
 }
-# TODO Ignore months for which an archive file already exists
 
 # for each month: for each day with posts: Fetch posts; write month archive
+# Ignore months for which an archive file already exists
 # Note: it's not very bloggish, but I have decided to sort these chronologically
 # in the archive. I think it reads better that way. -VV
+my $current = substr($now->datetime,0,7);
 MONTH:
 for my $month (sort keys %date_by_month) {
     my $file = $directory->file("$month.atom");
-    next MONTH if -e $file;
+    next MONTH if -e $file and $month ne $current;
     my $outfile = $file->openw 
         or die "Error opening $file: $!";
     
@@ -69,30 +74,4 @@ for my $month (sort keys %date_by_month) {
     $outfile->close;
 }
 
-=pod
-
-    $dest = file($dest);
-
-    $maxage = $mission->{maxage} || 86400; # by default, only check once per day
-
-    if ($dest->stat and $dest->stat->mtime > time()-$maxage) {
-        INFO("File $dest is fresh");
-        next LABEL;
-    }
-    unless ($dest->dir->stat) {
-        $dest->dir->mkpath or do {
-            ERROR("Unable to create dest dir ".$dest->dir."; $!");
-            next LABEL;
-        };
-    }
-    $headers{':content_file'} = "$dest.part";
-    # TODO Add If-Modified-Since header
-    $resp = $ua->get($source, %headers);
-    if ($resp->is_success) {
-        rename "$dest.part", $dest;
-        DEBUG("Saved $dest");
-    } else {
-        ERROR($resp->status_line);
-    }
-=cut
 
