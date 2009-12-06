@@ -17,6 +17,13 @@ WARN "warn";
 ERROR "error";
 FATAL "fatal";
 
+DEBUG "debug %s", \%config;
+INFO "info %s", \%config;
+WARN "warn %s", \%config;
+ERROR "error %s", \%config;
+FATAL "fatal %s", \%config;
+
+
 __END__
 
 =head1 NAME

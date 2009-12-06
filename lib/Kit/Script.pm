@@ -1,20 +1,23 @@
 package main;
 use Getopt::Long;
-use Log::Log4perl qw(:easy);
+use Log::Any;
 use Pod::Usage;
-Log::Log4perl::Config->allow_code(0);
 
 package Kit::Script;
 use strict;
 use warnings;
 use Config::Find;
 use Config::General qw(ParseConfig);
+use Log::Any::Adapter;
+use Log::Log4perl ();
 use Log::Log4perl::Level;
+Log::Log4perl::Config->allow_code(0);
 
 use Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(auto_configure);
+our @EXPORT = qw(auto_configure DEBUG INFO WARN ERROR FATAL);
 our $VERSION = '0.002';
+our %Logger_for_package;
 
 sub import {
     my $caller = caller();
@@ -32,7 +35,8 @@ sub import {
 sub auto_configure {
     my %args = @_;
     my ($logging, %options);
-
+    my $calling_package = caller();
+    
     # Parse command line options
     Getopt::Long::Configure('bundling');
     my @getopt = ('configfile|C:s','help|?','verbose|v+');
@@ -61,9 +65,38 @@ sub auto_configure {
     } else {
         Log::Log4perl->easy_init( ($WARN,$INFO,$DEBUG,$TRACE)[$options{verbose}]  );
     }
+    Log::Any::Adapter->set('Log4perl');
+    $Logger_for_package{$calling_package} = Log::Any->get_logger(category=>$calling_package);
 
     # Command line options override config values
     return (%script_config, %options);
+}
+
+# These subs emulate Log::Log4perl ':easy', but enhanced with Log::Any
+# sprintf behavior.
+sub DEBUG {
+    return unless my $L = $Logger_for_package{scalar(caller())};
+    return @_ > 1 ? $L->debugf(@_) : $L->debug(@_);
+}
+
+sub INFO {
+    return unless my $L = $Logger_for_package{scalar(caller())};
+    return @_ > 1 ? $L->infof(@_) : $L->info(@_);
+}
+
+sub WARN {
+    return unless my $L = $Logger_for_package{scalar(caller())};
+    return @_ > 1 ? $L->warnf(@_) : $L->warn(@_);
+}
+
+sub ERROR {
+    return unless my $L = $Logger_for_package{scalar(caller())};
+    return @_ > 1 ? $L->errorf(@_) : $L->error(@_);
+}
+
+sub FATAL {
+    return unless my $L = $Logger_for_package{scalar(caller())};
+    return @_ > 1 ? $L->fatalf(@_) : $L->fatal(@_);
 }
 
 1;
