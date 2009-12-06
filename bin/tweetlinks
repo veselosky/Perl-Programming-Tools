@@ -1,0 +1,48 @@
+#!/usr/bin/perl
+use Kit::Script;
+# Kit Script is borked, so...
+use feature ':5.10';
+use Path::Class;
+use XML::Feed;
+use Net::Twitter;
+use LWP::Simple;
+use DateTime;
+use DateTime::Format::HTTP;
+use Data::Dumper;
+use HTML::TreeBuilder::XPath;
+
+our $VERSION = '0.001';
+
+my $now = DateTime->now;
+my %config = auto_configure(options => [qw(dir|d:s username|user|u:s password|p:s)]);
+my $logger = get_logger();
+
+my $directory = dir($config{dir}||'.');
+
+my $net = Net::Twitter->new(username => $config{username}, password => $config{password});
+
+# TODO Check time of last update against existing archives to see if we need to continue
+
+my @tweets = @{$net->home_timeline};
+my @things;
+TWEET:
+for (@tweets) {
+    my %thing;
+    $thing{text} = $_->{truncated} ? $_->{retweeted_status}{text} : $_->{text};
+    if ($thing{text} =~ m{(http://\S+)}) {
+        my $url = $1;
+        my $tree = eval { HTML::TreeBuilder::XPath->parse(get($url)) };
+        next TWEET unless $tree && $tree->title;
+        $thing{title} = $tree->title;
+        $thing{url} = $url;
+    } else {
+        next TWEET;
+    }
+    push @things, \%thing;
+}
+for my $thing (@things) {
+    for my $key (keys %$thing) {
+        say "$key:\t $thing->{$key}";
+    }
+    say;
+}

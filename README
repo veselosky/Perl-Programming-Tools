@@ -1,8 +1,9 @@
 Perl Programming Tools
 
 This distribution is a set of modules and scripts that I maintain for my own
-web development and scripting. If you find it useful, great! Drop me a note
-and let me know!
+web development and scripting. It's mostly a "scratch" area where I play with
+things. It is in no way stable and not guaranteed to be usable (even for me).
+If you find it useful, great! If not, well, write your own code, sucka!
 
 Vince Veselosky 
 vince -at- control-escape.com
@@ -21,8 +22,8 @@ To install this module, run the following commands:
 
 SUPPORT AND DOCUMENTATION
 
-After installing, you can find documentation for this module with the
-perldoc command.
+There is no support for this stuff, and the documentation is just what
+you see. Use at your won risk.
 
 Visit my web site at http://www.webquills.net for more information.
 

@@ -2,7 +2,6 @@ package main;
 use Getopt::Long;
 use Log::Log4perl qw(:easy);
 use Pod::Usage;
-
 Log::Log4perl::Config->allow_code(0);
 
 package Kit::Script;
@@ -15,6 +14,7 @@ use Log::Log4perl::Level;
 use Exporter;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(auto_configure);
+our $VERSION = '0.002';
 
 sub import {
     my $caller = caller();

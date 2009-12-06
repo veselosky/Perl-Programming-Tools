@@ -4,14 +4,13 @@ use Data::Dumper;
 
 my %config = auto_configure(options => ['x']);
 my $string = "SUCKA!!";
-if ($[ >= 5.010) {
-    say $string;
+if ($] >= 5.010) {
+    say "Modern Perl, $string";
 } else {
-    print "$string\n";
+    print "Old school Perl, $string\n";
 }
 print Dumper \%config;
 
-TRACE "trace";
 DEBUG "debug";
 INFO "info";
 WARN "warn";
