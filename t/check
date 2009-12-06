@@ -3,8 +3,12 @@ use Kit::Script;
 use Data::Dumper;
 
 my %config = auto_configure(options => ['x']);
-my $string = "SUCKA!!\n";
-print $string;
+my $string = "SUCKA!!";
+if ($[ >= 5.010) {
+    say $string;
+} else {
+    print "$string\n";
+}
 print Dumper \%config;
 
 TRACE "trace";
