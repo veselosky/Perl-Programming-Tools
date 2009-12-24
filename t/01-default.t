@@ -4,11 +4,12 @@ use Kit::Script;
 use Test::More tests =>
 11;
 use Test::Output;
+use Test::Exception;
 use Data::Dumper;
 
 my %config = auto_configure(options => ['x']);
 
-stdout_is( sub {say "This is Perl!"}, "This is Perl!\n", 'say() imported');
+lives_ok( sub {say "This is Perl!"}, 'say() imported');
 
 # Default log level is WARN
 stderr_is( sub {DEBUG "debug";}, "", 'debug');
