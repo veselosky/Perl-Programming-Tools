@@ -28,6 +28,8 @@ sub import {
     if ($]>=5.010000) {
         require feature;
         feature->import(':5.10');
+    } else {
+        push @EXPORT, 'say';
     }
     __PACKAGE__->export_to_level(1,@_);
 }
@@ -47,7 +49,6 @@ sub auto_configure {
     }
     main::GetOptions(\%options,@getopt);
     main::pod2usage(1) if $options{help};
-    $options{verbose} ||= 0;
 
     # Find the configuration file
     my %find = ();
@@ -58,12 +59,13 @@ sub auto_configure {
     my %config = $args{'Config::General'} ? %{$args{'Config::General'}} : ();
     $config{'-ConfigFile'} = $config_file if $config_file;
     my %script_config = ParseConfig(%config);
+    my %combined = (verbose => 0, %script_config, %options);
 
     # Initialize logging
     if ($logging = $script_config{'Log::Log4perl'}) {
         Log::Log4perl->init($logging);
     } else {
-        Log::Log4perl->easy_init( ($WARN,$INFO,$DEBUG,$TRACE)[$options{verbose}]  );
+        Log::Log4perl->easy_init( ($WARN,$INFO,$DEBUG,$TRACE)[$combined{verbose}] );
     }
     Log::Any::Adapter->set('Log4perl');
     $Logger_for_package{$calling_package} = Log::Any->get_logger(category=>$calling_package);
@@ -71,6 +73,8 @@ sub auto_configure {
     # Command line options override config values
     return (%script_config, %options);
 }
+
+sub say { print @_, "\n" }
 
 # These subs emulate Log::Log4perl ':easy', but enhanced with Log::Any
 # sprintf behavior.
